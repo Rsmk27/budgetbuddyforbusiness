@@ -1,0 +1,58 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Budget Buddy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#2563EB',
+              secondary: '#4f46e5',
+              positive: '#10B981',
+              negative: '#EF4444',
+              warning: '#F59E0B',
+              'bg-light': '#F9FAFB',
+              'bg-dark': '#111827',
+              'text-light': '#1F2937',
+              'text-dark': '#F9FAFB',
+              'text-secondary-light': '#6B7280',
+              'text-secondary-dark': '#9CA3AF',
+              'card-light': '#FFFFFF',
+              'card-dark': '#1F2937',
+              'border-light': '#E5E7EB',
+              'border-dark': '#374151',
+            },
+            fontFamily: {
+              inter: ['Inter', 'sans-serif'],
+            },
+          },
+        },
+        darkMode: 'class',
+      }
+    </script>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.20.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.2.1",
+    "html2pdf.js": "https://aistudiocdn.com/html2pdf.js@^0.12.1"
+  }
+}
+</script>
+</head>
+<body class="font-inter bg-bg-light dark:bg-bg-dark transition-colors duration-300">
+    <div id="root"></div>
+</body>
+</html>
