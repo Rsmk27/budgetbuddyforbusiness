@@ -1,60 +1,68 @@
-
+// FIX: Provide full implementation for the LoginPage component.
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim()) {
-      login(email);
+    if (username.trim() && password.trim()) {
+      // In a real app, you'd validate credentials against a server.
+      // Here, we'll just log in with the username.
+      login(username);
     } else {
-      alert('Please enter an email address.');
+      setError('Please enter a username and password.');
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-bg-light dark:bg-bg-dark">
-      <div className="w-full max-w-md p-8 space-y-8 bg-card-light dark:bg-card-dark rounded-2xl shadow-xl">
+    <div className="flex items-center justify-center min-h-screen bg-background-light dark:bg-background-dark">
+      <div className="w-full max-w-md p-8 space-y-8 bg-card-light dark:bg-card-dark rounded-2xl shadow-lg">
         <div className="text-center">
-          <div className="flex items-center justify-center space-x-2 text-3xl font-bold text-primary mb-2">
-            <i className="fas fa-wallet"></i>
-            <span>Business Budget Buddy</span>
-          </div>
-          <p className="text-text-secondary-light dark:text-text-secondary-dark">
-            Sign in to access your financial dashboard.
-          </p>
+            <div className="flex items-center justify-center space-x-2 text-3xl font-bold text-primary mb-4">
+                <i className="fas fa-wallet"></i>
+                <span>Budget Buddy</span>
+            </div>
+          <p className="text-text-secondary-light dark:text-text-secondary-dark">Sign in to your account</p>
         </div>
-        <form className="space-y-6" onSubmit={handleSubmit}>
+        <form className="space-y-6" onSubmit={handleLogin}>
+          {error && <p className="text-red-500 text-center">{error}</p>}
           <div>
-            <label htmlFor="email" className="sr-only">
-              Email address
-            </label>
+            <label htmlFor="username" className="text-sm font-bold text-gray-600 dark:text-gray-300 block">Username</label>
             <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full p-3 mt-2 text-gray-700 bg-gray-200 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="e.g., jane.doe"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 text-lg border border-border-light dark:border-border-dark bg-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Enter your email"
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="text-sm font-bold text-gray-600 dark:text-gray-300 block">Password</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-3 mt-2 text-gray-700 bg-gray-200 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="********"
+              required
             />
           </div>
           <div>
             <button
               type="submit"
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+              className="w-full py-3 font-bold text-white bg-primary rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Sign In / Continue
+              Sign In
             </button>
           </div>
-          <p className="text-xs text-center text-text-secondary-light dark:text-text-secondary-dark">
-            No password needed. Your data is securely linked to your email address on this device.
-          </p>
         </form>
       </div>
     </div>

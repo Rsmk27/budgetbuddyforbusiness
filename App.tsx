@@ -1,8 +1,6 @@
-
+// FIX: Provide full implementation for the main App component.
 import React, { useState, useEffect } from 'react';
-import { Page, Transaction, TransactionType, Budget, AIInsight } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { getFinancialInsights } from './services/geminiService';
 import { useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -12,48 +10,60 @@ import ReportsPage from './components/ReportsPage';
 import SettingsPage from './components/SettingsPage';
 import LoginPage from './components/LoginPage';
 import AIInsightModal from './components/AIInsightModal';
+import { getFinancialInsights } from './services/geminiService';
+import { Transaction, Budget, TransactionType, Page, AIInsight } from './types';
 
-const MainApp: React.FC = () => {
+function App() {
   const { currentUser, logout } = useAuth();
-  const [isDarkMode, setIsDarkMode] = useLocalStorage<boolean>('theme', false);
-  const [currentPage, setCurrentPage] = useState<Page>(Page.Dashboard);
   
-  // User-specific data storage
-  const [transactions, setTransactions] = useLocalStorage<Transaction[]>(`transactions_${currentUser}`, []);
-  const [budgets, setBudgets] = useLocalStorage<Budget[]>(`budgets_${currentUser}`, []);
+  const transactionsKey = currentUser ? `transactions_${currentUser}` : 'transactions';
+  const budgetsKey = currentUser ? `budgets_${currentUser}` : 'budgets';
 
+  const [transactions, setTransactions] = useLocalStorage<Transaction[]>(transactionsKey, []);
+  const [budgets, setBudgets] = useLocalStorage<Budget[]>(budgetsKey, []);
+  const [currentPage, setCurrentPage] = useState<Page>(Page.Dashboard);
+  const [isDarkMode, setIsDarkMode] = useLocalStorage('isDarkMode', false);
+
+  const [isAIInsightModalOpen, setIsAIInsightModalOpen] = useState(false);
+  const [aiInsight, setAIInsight] = useState<AIInsight | null>(null);
+  const [aiError, setAIError] = useState<string | null>(null);
   const [isAILoading, setIsAILoading] = useState(false);
-  const [aiInsight, setAiInsight] = useState<AIInsight | null>(null);
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.toggle('dark', isDarkMode);
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, [isDarkMode]);
 
-  const handleAddTransaction = (newTransaction: Omit<Transaction, 'id' | 'type' | 'date'>, type: TransactionType) => {
-    setTransactions(prev => [...prev, {
-      ...newTransaction,
+  // Reset page to dashboard on login/logout
+  useEffect(() => {
+    setCurrentPage(Page.Dashboard);
+  }, [currentUser]);
+
+
+  const handleAddTransaction = (transaction: Omit<Transaction, 'id' | 'type' | 'date'>) => {
+    const newTransaction: Transaction = {
+      ...transaction,
       id: crypto.randomUUID(),
-      type: type,
       date: new Date().toISOString(),
-    }]);
+      type: currentPage === Page.Income ? TransactionType.Income : TransactionType.Expense,
+    };
+    setTransactions(prev => [...prev, newTransaction]);
   };
 
   const handleDeleteTransaction = (id: string) => {
     setTransactions(prev => prev.filter(t => t.id !== id));
   };
   
-  const handleSetBudget = (newBudget: Omit<Budget, 'id'>) => {
+  const handleSetBudget = (budget: Omit<Budget, 'id'>) => {
     setBudgets(prev => {
-      const existingIndex = prev.findIndex(b => b.category === newBudget.category);
-      if (existingIndex > -1) {
-        const updatedBudgets = [...prev];
-        updatedBudgets[existingIndex] = { ...updatedBudgets[existingIndex], ...newBudget };
-        return updatedBudgets;
+      const existing = prev.find(b => b.category === budget.category);
+      if (existing) {
+        return prev.map(b => b.category === budget.category ? { ...b, ...budget } : b);
       }
-      return [...prev, { ...newBudget, id: crypto.randomUUID() }];
+      return [...prev, { ...budget, id: crypto.randomUUID() }];
     });
   };
 
@@ -62,69 +72,70 @@ const MainApp: React.FC = () => {
   };
 
   const handleClearData = () => {
-      setTransactions([]);
-      setBudgets([]);
+    setTransactions([]);
+    setBudgets([]);
   };
-  
+
   const handleGetAIInsights = async () => {
-      setIsAILoading(true);
-      setAiError(null);
-      setAiInsight(null);
-      setIsModalOpen(true);
-      try {
-        const insights = await getFinancialInsights(transactions, budgets);
-        setAiInsight(insights);
-      } catch (error) {
-        setAiError((error as Error).message);
-      } finally {
-        setIsAILoading(false);
+    setIsAILoading(true);
+    setAIError(null);
+    setAIInsight(null);
+    setIsAIInsightModalOpen(true);
+    try {
+      if (transactions.length === 0 && budgets.length === 0) {
+        throw new Error("There is no financial data to analyze. Please add some transactions or budgets first.");
       }
+      const insights = await getFinancialInsights(transactions, budgets);
+      setAIInsight(insights);
+    } catch (error: any) {
+      setAIError(error.message || "An unknown error occurred.");
+    } finally {
+      setIsAILoading(false);
+    }
   };
 
   const renderPage = () => {
     switch (currentPage) {
-      case Page.Dashboard: return <Dashboard transactions={transactions} budgets={budgets} onGetAIInsights={handleGetAIInsights} isAILoading={isAILoading && isModalOpen} />;
-      case Page.Income: return <TransactionsPage type={TransactionType.Income} transactions={transactions} onAddTransaction={(t) => handleAddTransaction(t, TransactionType.Income)} onDeleteTransaction={handleDeleteTransaction} />;
-      case Page.Expenses: return <TransactionsPage type={TransactionType.Expense} transactions={transactions} onAddTransaction={(t) => handleAddTransaction(t, TransactionType.Expense)} onDeleteTransaction={handleDeleteTransaction} />;
-      case Page.Budgets: return <BudgetsPage budgets={budgets} transactions={transactions} onSetBudget={handleSetBudget} onDeleteBudget={handleDeleteBudget}/>;
-      case Page.Reports: return <ReportsPage transactions={transactions} />;
-      case Page.Settings: return <SettingsPage onClearData={handleClearData} onLogout={logout} currentUser={currentUser!} />;
-      default: return <Dashboard transactions={transactions} budgets={budgets} onGetAIInsights={handleGetAIInsights} isAILoading={isAILoading && isModalOpen} />;
+      case Page.Dashboard:
+        return <Dashboard transactions={transactions} budgets={budgets} onGetAIInsights={handleGetAIInsights} isAILoading={isAILoading} />;
+      case Page.Income:
+        return <TransactionsPage type={TransactionType.Income} transactions={transactions} onAddTransaction={handleAddTransaction} onDeleteTransaction={handleDeleteTransaction} />;
+      case Page.Expenses:
+        return <TransactionsPage type={TransactionType.Expense} transactions={transactions} onAddTransaction={handleAddTransaction} onDeleteTransaction={handleDeleteTransaction} />;
+      case Page.Budgets:
+        return <BudgetsPage budgets={budgets} transactions={transactions} onSetBudget={handleSetBudget} onDeleteBudget={handleDeleteBudget} />;
+      case Page.Reports:
+        return <ReportsPage transactions={transactions} />;
+      case Page.Settings:
+        return <SettingsPage onClearData={handleClearData} onLogout={logout} currentUser={currentUser!} />;
+      default:
+        return <Dashboard transactions={transactions} budgets={budgets} onGetAIInsights={handleGetAIInsights} isAILoading={isAILoading} />;
     }
   };
 
+  if (!currentUser) {
+    return <LoginPage />;
+  }
+
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-bg-light dark:bg-bg-dark text-text-light dark:text-text-dark">
+    <div className="flex h-screen bg-background-light dark:bg-background-dark font-sans">
       <Sidebar 
         currentPage={currentPage} 
         onPageChange={setCurrentPage} 
-        isDarkMode={isDarkMode} 
-        onThemeToggle={() => setIsDarkMode(!isDarkMode)} 
+        isDarkMode={isDarkMode}
+        onThemeToggle={() => setIsDarkMode(prev => !prev)}
       />
-      <main className="flex-1 p-6 md:p-10 transition-transform duration-300">
+      <main className="flex-1 p-8 overflow-y-auto">
         {renderPage()}
       </main>
       <AIInsightModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isAIInsightModalOpen || isAILoading}
+        onClose={() => { if (!isAILoading) setIsAIInsightModalOpen(false); }}
         insight={aiInsight}
         error={aiError}
       />
-      {isAILoading && isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-              <div className="text-white text-center">
-                  <i className="fas fa-spinner animate-spin text-5xl mb-4"></i>
-                  <p className="text-lg">Analyzing your finances...</p>
-              </div>
-          </div>
-      )}
     </div>
   );
-};
-
-const App: React.FC = () => {
-    const { currentUser } = useAuth();
-    return currentUser ? <MainApp /> : <LoginPage />;
 }
 
 export default App;

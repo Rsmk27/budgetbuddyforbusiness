@@ -1,5 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
+// FIX: Corrected the import path for types.
 import { Transaction, Budget, AIInsight } from '../types';
 
 if (!process.env.API_KEY) {

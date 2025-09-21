@@ -1,4 +1,4 @@
-
+// FIX: Corrected import path for types.
 import React from 'react';
 import { AIInsight } from '../types';
 

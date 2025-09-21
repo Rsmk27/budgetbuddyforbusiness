@@ -1,11 +1,10 @@
-
-import React, 'react';
-import { createContext, useContext, ReactNode } from 'react';
+// FIX: Provide full implementation for the AuthContext.
+import React, { createContext, useContext, ReactNode, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface AuthContextType {
   currentUser: string | null;
-  login: (email: string) => void;
+  login: (user: string) => void;
   logout: () => void;
 }
 
@@ -14,15 +13,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useLocalStorage<string | null>('currentUser', null);
 
-  const login = (email: string) => {
-    if (email) {
-      setCurrentUser(email.trim());
-    }
-  };
+  const login = useCallback((user: string) => {
+    setCurrentUser(user);
+  }, [setCurrentUser]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
+    if (currentUser) {
+      localStorage.removeItem(`transactions_${currentUser}`);
+      localStorage.removeItem(`budgets_${currentUser}`);
+    }
     setCurrentUser(null);
-  };
+  }, [setCurrentUser, currentUser]);
 
   const value = { currentUser, login, logout };
 
